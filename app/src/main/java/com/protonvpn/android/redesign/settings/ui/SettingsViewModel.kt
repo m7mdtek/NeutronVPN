@@ -369,10 +369,8 @@ class SettingsViewModel @Inject constructor(
         val showSignOut: Boolean,
         val showDebugTools: Boolean,
         val theme: SettingViewState.Theme,
-        val accountScreenEnabled: Boolean,
         val versionName: String,
         val appUpdateBannerState: AppUpdateBannerState,
-        val showAccountCategory: Boolean,
         val connectionPreferences: SettingViewState.ConnectionPreferencesState,
     )
 
@@ -530,7 +528,6 @@ class SettingsViewModel @Inject constructor(
                 buildInfo = buildConfigText,
                 showDebugTools = displayDebugUi,
                 showSignOut = !isCredentialLess && !managedConfig.isManaged,
-                accountScreenEnabled = !managedConfig.isManaged,
                 customDns =
                     SettingViewState.CustomDns(
                         enabled = settings.customDns.effectiveEnabled,
@@ -543,7 +540,6 @@ class SettingsViewModel @Inject constructor(
                 ipV6 = SettingViewState.IPv6(enabled = settings.ipV6Enabled),
                 theme = SettingViewState.Theme(settings.theme),
                 appUpdateBannerState = appUpdateBannerState,
-                showAccountCategory = !managedConfig.isManaged,
                 connectionPreferences = SettingViewState.ConnectionPreferencesState(
                     isFeatureDiscovered = featurePreferences.isConnectionPreferencesDiscovered,
                     isFreeUser = isFree,

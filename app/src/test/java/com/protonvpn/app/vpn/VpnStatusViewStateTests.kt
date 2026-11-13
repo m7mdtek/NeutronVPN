@@ -81,7 +81,6 @@ class VpnStatusViewStateFlowTest {
     private lateinit var statusFlow: MutableStateFlow<VpnStatusProviderUI.Status>
     private lateinit var netShieldStatsFlow: MutableStateFlow<NetShieldStats>
     private lateinit var changeServerFlow: MutableStateFlow<ChangeServerViewState?>
-    private lateinit var hasPromoBannerFlow: MutableStateFlow<Boolean>
     private lateinit var dnsOverrideFlow: MutableStateFlow<DnsOverride>
 
     private val freeUser = TestUser.freeUser.vpnUser
@@ -109,7 +108,6 @@ class VpnStatusViewStateFlowTest {
         val currentUser = CurrentUser(testUserProvider)
         settingsFlow = MutableStateFlow(LocalUserSettings.Default)
         changeServerFlow = MutableStateFlow(null)
-        hasPromoBannerFlow = MutableStateFlow(false)
         dnsOverrideFlow = MutableStateFlow(DnsOverride.None)
         val settingsForConnection = SettingsForConnection(
             rawSettingsFlow = settingsFlow,
@@ -129,7 +127,6 @@ class VpnStatusViewStateFlowTest {
             settingsForConnection,
             currentUser,
             changeServerFlow,
-            hasPromoBannerFlow,
             dnsOverrideFlow,
         )
     }
@@ -184,34 +181,6 @@ class VpnStatusViewStateFlowTest {
         val netShieldState = banner.netShieldState
         assertIs<NetShieldViewState.Available>(netShieldState)
         assertEquals(NetShieldStats(3L, 3L, 3000L), netShieldState.netShieldStats)
-    }
-
-    @Test
-    fun `when promo banner is present then no netshield upsell banner is shown for free users`() = runTest{
-        statusFlow.value = VpnStatusProviderUI.Status(VpnState.Connected, connectionParams)
-        testUserProvider.vpnUser = freeUser
-        assertEquals(VpnStatusViewState.Connected(false, StatusBanner.UpgradePlus), vpnStatusViewStateFlow.first())
-        hasPromoBannerFlow.value = true
-        assertEquals(VpnStatusViewState.Connected(false, null), vpnStatusViewStateFlow.first())
-    }
-
-    @Test
-    fun `when promo banner is present then no change country banner is shown for free users`() = runTest{
-        statusFlow.value = VpnStatusProviderUI.Status(VpnState.Connected, connectionParams)
-        testUserProvider.vpnUser = freeUser
-        changeServerFlow.value = ChangeServerViewState.Locked(10, 10, false)
-        assertEquals(VpnStatusViewState.Connected(false, StatusBanner.UnwantedCountry), vpnStatusViewStateFlow.first())
-        hasPromoBannerFlow.value = true
-        assertEquals(VpnStatusViewState.Connected(false, null), vpnStatusViewStateFlow.first())
-    }
-
-    @Test
-    fun `when promo banner is present then NetShield state is shown for paid users`() = runTest{
-        statusFlow.value = VpnStatusProviderUI.Status(VpnState.Connected, connectionParams)
-        hasPromoBannerFlow.value = true
-        val vpnStatusViewState = vpnStatusViewStateFlow.first()
-        assertIs<VpnStatusViewState.Connected>(vpnStatusViewState)
-        assertIs<StatusBanner.NetShieldBanner>(vpnStatusViewState.banner)
     }
 
     @Test

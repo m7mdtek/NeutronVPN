@@ -19,16 +19,17 @@
 
 package com.protonvpn.android.redesign.vpn
 
-import com.protonvpn.android.appconfig.ChangeServerConfigFlow
+import com.protonvpn.android.auth.data.hasAccessToServer
 import com.protonvpn.android.auth.usecase.CurrentUser
-import com.protonvpn.android.di.WallClock
+import com.protonvpn.android.excludedlocations.ExcludedLocations
 import com.protonvpn.android.logging.LogCategory
 import com.protonvpn.android.logging.LogLevel
 import com.protonvpn.android.logging.ProtonLogger
 import com.protonvpn.android.logging.UiReconnect
+import com.protonvpn.android.redesign.CountryId
+import com.protonvpn.android.servers.Server
 import com.protonvpn.android.servers.ServerManager2
 import com.protonvpn.android.settings.data.EffectiveCurrentUserSettings
-import com.protonvpn.android.ui.home.vpn.ChangeServerPrefs
 import com.protonvpn.android.vpn.ConnectTrigger
 import com.protonvpn.android.vpn.VpnConnectionManager
 import com.protonvpn.android.vpn.VpnState
@@ -55,14 +56,11 @@ private const val ALLOW_CHANGE_SERVER_CONNECT_DELAY_MS = 6_000L
 @Singleton
 class ChangeServerManager @Inject constructor(
     private val mainScope: CoroutineScope,
-    vpnStatusProviderUI: VpnStatusProviderUI,
-    private val changeServerConfigFlow: ChangeServerConfigFlow,
+    private val vpnStatusProviderUI: VpnStatusProviderUI,
     private val vpnConnectionManager: dagger.Lazy<VpnConnectionManager>,
     private val serverManager: ServerManager2,
-    private val changeServerPrefs: ChangeServerPrefs,
     private val currentUser: CurrentUser,
     private val userSettings: EffectiveCurrentUserSettings,
-    @WallClock private val wallClock: () -> Long
 ) {
     private val changeInProgress = MutableStateFlow(false)
     val isChangingServer: StateFlow<Boolean> get() = changeInProgress
@@ -95,24 +93,54 @@ class ChangeServerManager @Inject constructor(
         ProtonLogger.log(UiReconnect, "Change server")
         mainScope.launch {
             changeInProgress.value = true
-            val server = serverManager.getRandomServer(currentUser.vpnUser(), userSettings.protocol.first())
-            // The server should never be null, worst case the same server that is connected should be returned.
+            val server = getNextCountryServer()
             if (server != null) {
                 vpnConnectionManager.get().connect(
                     vpnUiDelegate,
                     ConnectIntent.fromServer(server, emptySet()),
-                ConnectTrigger.ChangeServer
-            )} else {
-                ProtonLogger.logCustom(LogLevel.ERROR, LogCategory.CONN_CONNECT, "Change server: no server found!")
-            }
-
-            if (!hasTroubleConnecting.value) {
-                val currentCount = changeServerPrefs.changeCounter + 1
-                changeServerPrefs.changeCounter =
-                    if (currentCount > changeServerConfigFlow.first().maxAttemptCount) 0 else currentCount
-                changeServerPrefs.lastChangeTimestamp = wallClock()
+                    ConnectTrigger.ChangeServer
+                )
+            } else {
+                changeInProgress.value = false
+                ProtonLogger.logCustom(
+                    LogLevel.ERROR,
+                    LogCategory.CONN_CONNECT,
+                    "Change server: no different accessible country found!"
+                )
             }
         }
+    }
+
+    private suspend fun getNextCountryServer(): Server? {
+        val countries = serverManager.getVpnCountries()
+        if (countries.size < 2) return null
+
+        val currentCountry = vpnStatusProviderUI.uiStatus.first().server?.exitCountry?.let { CountryId(it) }
+        val currentIndex = countries.indexOfFirst { CountryId(it.flag) == currentCountry }
+        val vpnUser = currentUser.vpnUser()
+        val protocol = userSettings.protocol.first()
+
+        for (offset in 1..countries.size) {
+            val country = countries[(currentIndex + offset) % countries.size]
+            val countryId = CountryId(country.flag)
+            if (countryId == currentCountry) continue
+
+            val server = serverManager.getBestServerForConnectIntent(
+                ConnectIntent.FastestInCountry(countryId, emptySet()),
+                vpnUser,
+                protocol,
+                ExcludedLocations.Empty,
+            )
+            if (server != null &&
+                CountryId(server.exitCountry) == countryId &&
+                server.online &&
+                vpnUser.hasAccessToServer(server)
+            ) {
+                return server
+            }
+        }
+
+        return null
     }
 
     private fun VpnStatusProviderUI.Status.isActivelyEstablishingConnection() =

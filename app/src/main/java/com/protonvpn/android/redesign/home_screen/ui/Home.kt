@@ -27,14 +27,12 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.statusBars
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.material.SnackbarHostState
@@ -58,7 +56,6 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
@@ -75,10 +72,6 @@ import com.protonvpn.android.base.ui.collectAsEffect
 import com.protonvpn.android.base.ui.extraPaddingForWindowSize
 import com.protonvpn.android.excludedlocations.ui.ExcludedLocationsAdoptionBottomSheet
 import com.protonvpn.android.netshield.NetShieldActions
-import com.protonvpn.android.promooffers.ui.ProminentBannerState
-import com.protonvpn.android.promooffers.ui.PromoOfferBanner
-import com.protonvpn.android.promooffers.ui.PromoOfferBannerState
-import com.protonvpn.android.promooffers.ui.PromoOfferProminentBanner
 import com.protonvpn.android.redesign.app.ui.MainActivityViewModel
 import com.protonvpn.android.redesign.app.ui.SettingsChangeViewModel
 import com.protonvpn.android.redesign.app.ui.nav.MainNavEvent
@@ -106,7 +99,6 @@ import com.protonvpn.android.tv.main.CountryHighlight
 import com.protonvpn.android.ui.home.vpn.ChangeServerButton
 import com.protonvpn.android.ui.planupgrade.UpgradeDialogLauncherVM
 import com.protonvpn.android.utils.Constants
-import com.protonvpn.android.utils.isNightMode
 import com.protonvpn.android.utils.openUrl
 import com.protonvpn.android.vpn.ConnectTrigger
 import com.protonvpn.android.vpn.DisconnectTrigger
@@ -144,31 +136,12 @@ fun HomeRoute(
     val changeServerState =
         homeViewModel.changeServerViewState.collectAsStateWithLifecycle(null).value
     val upsellCarouselState = homeViewModel.upsellCarouselState.collectAsStateWithLifecycle().value
-    val isNightMode = LocalConfiguration.current.isNightMode()
-    val bottomPromoBannerState =
-        remember(isNightMode) { homeViewModel.getBottomPromoBannerStateFlow(isNightMode) }
-            .collectAsStateWithLifecycle()
-            .value
-    val prominentPromoBannerState =
-        homeViewModel.prominentPromoBannerStateFlow.collectAsStateWithLifecycle().value
     val snackError = homeViewModel.snackbarErrorFlow.collectAsStateWithLifecycle().value
     val adoptionComponent = homeViewModel.adoptionComponentFlow.collectAsStateWithLifecycle().value
 
     // Not using material3 snackbar because of inability to show multiline correctly
     val snackbarHostState = remember { androidx.compose.material.SnackbarHostState() }
     val fullyDrawn by remember { derivedStateOf { recentsViewState.value != null } }
-
-    val bottomPromoComponent = bottomPromoBannerState?.let {
-        BottomPromoComponent(
-            state = it,
-            onClick = {
-                homeViewModel.openPromoOffer(it, context)
-            },
-            onDismiss = {
-                homeViewModel.dismissPromoOffer(it.notificationId)
-            }
-        )
-    }
 
     val connectionCardComponent = ConnectionCardComponent(
         changeServerState = changeServerState,
@@ -205,18 +178,6 @@ fun HomeRoute(
         recentsExpandState = rememberRecentsExpandState()
     )
 
-    val prominentBannerPromo = prominentPromoBannerState?.let {
-        ProminentPromoComponent(
-            state = it,
-            onClick = {
-                homeViewModel.openPromoOffer(it, context)
-            },
-            onDismiss = {
-                homeViewModel.dismissPromoOffer(it.notificationId)
-            }
-        )
-    }
-
     activityViewModel.navEventsFlow.collectAsEffect { navEvent ->
         when (navEvent) {
             is MainNavEvent.OnNavigateToSubSettings -> {
@@ -238,8 +199,6 @@ fun HomeRoute(
                 settingsChangeViewModel.showDnsReconnectionDialog(vpnUiDelegate)
         },
         snackbarHostState = snackbarHostState,
-        bottomPromoComponent = bottomPromoComponent,
-        prominentPromoComponent = prominentBannerPromo,
         connectionCardComponent = connectionCardComponent,
         recentsComponent = recentsComponent,
         adoptionComponent = adoptionComponent,
@@ -290,8 +249,6 @@ fun HomeRoute(
 private val ListBgGradientHeightBasic = 100.dp
 private val ListBgGradientOffsetBasic = ListBgGradientHeightBasic - 32.dp
 private val ListBgGradientHeightExpanded = 200.dp
-private val PromoOfferBannerState?.peekOffset get() = if (this?.isDismissible == true) 60.dp else 44.dp
-
 @OptIn(ExperimentalMaterial3WindowSizeClassApi::class)
 @Composable
 fun HomeView(
@@ -303,8 +260,6 @@ fun HomeView(
     onDismissDialog: () -> Unit,
     onNetShieldToggleChanged: (Boolean) -> Unit,
     onDisableCustomDns: () -> Unit,
-    bottomPromoComponent: BottomPromoComponent?,
-    prominentPromoComponent: ProminentPromoComponent?,
     connectionCardComponent: ConnectionCardComponent,
     snackbarHostState: SnackbarHostState,
     recentsComponent: RecentsComponent,
@@ -369,18 +324,6 @@ fun HomeView(
             )
         }
     }
-
-    val bottomPromoBanner: (@Composable (Modifier) -> Unit)? =
-        bottomPromoComponent?.let {
-            @Composable { modifier ->
-                PromoOfferBanner(
-                    state = it.state,
-                    onClick = it.onClick,
-                    onDismiss = it.onDismiss,
-                    modifier = modifier.padding(start = 16.dp, end = 16.dp, bottom = 8.dp)
-                )
-            }
-        }
 
     val upsellCarouselContent: (@Composable (Modifier, Dp) -> Unit)? = upsellCarouselState?.let { state ->
         @Composable { modifier, paddingValues ->
@@ -482,8 +425,6 @@ fun HomeView(
                     viewState = recentsViewStateValue,
                     expandState = recentsComponent.recentsExpandState,
                     changeServerButton = changeServerButton,
-                    promoBanner = bottomPromoBanner,
-                    promoBannerPeekOffset = bottomPromoComponent?.state.peekOffset ?: 0.dp,
                     upsellContent = upsellCarouselContent,
                     onConnectClicked = connectionCardComponent.onConnect,
                     onDisconnectClicked = connectionCardComponent.onDisconnect,
@@ -534,16 +475,6 @@ fun HomeView(
                 .statusBarsPadding()
                 .constrainAs(vpnStatusTop) {}
         )
-
-        prominentPromoComponent?.let {
-            PromoOfferProminentBanner(
-                state = it.state,
-                onDismiss = it.onDismiss,
-                onAction = it.onClick,
-                contentWindowInsets = WindowInsets.statusBars,
-                modifier = Modifier.fillMaxWidth()
-            )
-        }
     }
 
     if (dialogState != null) {
@@ -589,18 +520,6 @@ fun HomeView(
         )
     }
 }
-
-data class BottomPromoComponent(
-    val state: PromoOfferBannerState,
-    val onDismiss: () -> Unit,
-    val onClick: (suspend () -> Unit)
-)
-
-data class ProminentPromoComponent(
-    val state: ProminentBannerState,
-    val onDismiss: () -> Unit,
-    val onClick: (suspend () -> Unit)
-)
 
 data class ConnectionCardComponent(
     val changeServerState: ChangeServerViewState?,

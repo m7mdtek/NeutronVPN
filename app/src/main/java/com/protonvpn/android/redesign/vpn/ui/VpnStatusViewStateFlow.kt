@@ -25,7 +25,6 @@ import com.protonvpn.android.netshield.NetShieldViewState
 import com.protonvpn.android.netshield.getNetShieldAvailability
 import com.protonvpn.android.redesign.vpn.usecases.SettingsForConnection
 import com.protonvpn.android.ui.home.ServerListUpdaterPrefs
-import com.protonvpn.android.promooffers.ui.HomeScreenPromoBannerFlow
 import com.protonvpn.android.utils.CountryTools
 import com.protonvpn.android.vpn.DnsOverride
 import com.protonvpn.android.vpn.DnsOverrideFlow
@@ -48,7 +47,6 @@ class VpnStatusViewStateFlow(
     settingsForConnection: SettingsForConnection,
     currentUser: CurrentUser,
     changeServerViewStateFlow: Flow<ChangeServerViewState?>,
-    hasPromoBannerFlow: Flow<Boolean>,
     dnsOverrideFlow: Flow<DnsOverride>,
 ) : Flow<VpnStatusViewState> {
 
@@ -60,7 +58,6 @@ class VpnStatusViewStateFlow(
         settingsForConnection: SettingsForConnection,
         currentUser: CurrentUser,
         changeServerViewStateFlow: ChangeServerViewStateFlow,
-        homeScreenPromoBannerFlow: HomeScreenPromoBannerFlow,
         dnsOverrideFlow: DnsOverrideFlow
     ) : this(
         vpnStatusProvider,
@@ -69,7 +66,6 @@ class VpnStatusViewStateFlow(
         settingsForConnection,
         currentUser,
         changeServerViewStateFlow as Flow<ChangeServerViewState?>,
-        homeScreenPromoBannerFlow.hasBannerFlow(),
         dnsOverrideFlow as Flow<DnsOverride>
     )
 
@@ -86,13 +82,11 @@ class VpnStatusViewStateFlow(
             vpnConnectionManager.netShieldStats,
             currentUser.vpnUserFlow,
             changeServerViewStateFlow,
-            hasPromoBannerFlow,
             dnsOverrideFlow,
-        ) { stats, user, changeServer, hasPromoBanner, dnsOverride ->
+        ) { stats, user, changeServer, dnsOverride ->
             val availability = user.getNetShieldAvailability()
             val isNetShieldEnabled = connectionSettings.connectionSettings.isNetShieldEnabled
             when {
-                hasPromoBanner && availability != NetShieldAvailability.AVAILABLE -> null
                 changeServer is ChangeServerViewState.Locked -> StatusBanner.UnwantedCountry
                 else -> when (availability) {
                     NetShieldAvailability.AVAILABLE -> {

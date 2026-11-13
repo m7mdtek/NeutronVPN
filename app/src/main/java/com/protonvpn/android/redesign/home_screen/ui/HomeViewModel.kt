@@ -19,7 +19,6 @@
 package com.protonvpn.android.redesign.home_screen.ui
 
 import android.annotation.TargetApi
-import android.content.Context
 import android.os.Parcelable
 import androidx.annotation.StringRes
 import androidx.lifecycle.DefaultLifecycleObserver
@@ -36,15 +35,6 @@ import com.protonvpn.android.logging.UiConnect
 import com.protonvpn.android.logging.UiDisconnect
 import com.protonvpn.android.netshield.NetShieldProtocol
 import com.protonvpn.android.profiles.data.ProfilesDao
-import com.protonvpn.android.promooffers.data.ApiNotificationActions
-import com.protonvpn.android.promooffers.data.ApiNotificationOfferButton
-import com.protonvpn.android.promooffers.data.PromoOffersPrefs
-import com.protonvpn.android.promooffers.ui.HomeScreenProminentBannerFlow
-import com.protonvpn.android.promooffers.ui.HomeScreenPromoBannerFlow
-import com.protonvpn.android.promooffers.ui.ProminentBannerState
-import com.protonvpn.android.promooffers.ui.PromoOfferBannerState
-import com.protonvpn.android.promooffers.ui.PromoOfferButtonActions
-import com.protonvpn.android.promooffers.ui.PromoOfferIapActivity
 import com.protonvpn.android.redesign.recents.data.RecentConnection
 import com.protonvpn.android.redesign.recents.ui.RecentItemViewState
 import com.protonvpn.android.redesign.recents.usecases.GetQuickConnectIntent
@@ -62,10 +52,8 @@ import com.protonvpn.android.telemetry.UpgradeTelemetry
 import com.protonvpn.android.telemetry.UpgradeTrigger
 import com.protonvpn.android.telemetry.product.VpnProductPromptTelemetry
 import com.protonvpn.android.tv.main.CountryHighlight
-import com.protonvpn.android.ui.planupgrade.UpgradeFlowType
 import com.protonvpn.android.ui.storage.UiStateStorage
 import com.protonvpn.android.utils.TrafficMonitor
-import com.protonvpn.android.utils.openUrl
 import com.protonvpn.android.vpn.ConnectTrigger
 import com.protonvpn.android.vpn.DisconnectTrigger
 import com.protonvpn.android.vpn.VpnConnectionManager
@@ -142,10 +130,6 @@ class HomeViewModel @Inject constructor(
     userCountryIpBased: UserCountryIpBased,
     private val vpnErrorUIManager: VpnErrorUIManager,
     upsellCarouselStateFlow: UpsellCarouselStateFlow,
-    private val bottomPromoBannerFlow: HomeScreenPromoBannerFlow,
-    prominentPromoBannerFlow: HomeScreenProminentBannerFlow,
-    private val promoOfferButtonActions: PromoOfferButtonActions,
-    private val promoOffersPrefs: PromoOffersPrefs,
     @param:ElapsedRealtimeClock val elapsedRealtimeClock: () -> Long,
     private val toggleNetShield: ToggleNetShield,
     private val widgetManager: WidgetManager,
@@ -207,9 +191,6 @@ class HomeViewModel @Inject constructor(
 
     val recentsViewState = recentsListViewStateFlow
         .shareIn(viewModelScope, SharingStarted.WhileSubscribed(), replay = 1)
-
-    val prominentPromoBannerStateFlow: StateFlow<ProminentBannerState?> = prominentPromoBannerFlow
-        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(), null)
 
     val changeServerViewState: SharedFlow<ChangeServerViewState?> = changeServerViewStateFlow
         .shareIn(viewModelScope, SharingStarted.WhileSubscribed(), replay = 1)
@@ -341,10 +322,6 @@ class HomeViewModel @Inject constructor(
 
     suspend fun consumeErrorMessage() = vpnErrorUIManager.consumeErrorMessage()
 
-    fun getBottomPromoBannerStateFlow(isNightMode: Boolean): StateFlow<PromoOfferBannerState?> =
-        bottomPromoBannerFlow(isNightMode)
-            .stateIn(viewModelScope, SharingStarted.WhileSubscribed(), null)
-
     fun setNetShieldEnabled(isEnabled: Boolean) {
         viewModelScope.launch {
             toggleNetShield(isEnabled = isEnabled)
@@ -458,46 +435,6 @@ class HomeViewModel @Inject constructor(
 
     fun removeRecent(item: RecentItemViewState) {
         recentsManager.remove(item.id)
-    }
-
-    suspend fun openPromoOffer(banner: PromoOfferBannerState, context: Context) {
-        openPromoOffer(banner.action, banner.notificationId, banner.reference, context)
-    }
-
-    suspend fun openPromoOffer(banner: ProminentBannerState, context: Context) {
-        openPromoOffer(banner.actionButton!!, banner.notificationId,  banner.reference, context)
-    }
-
-    private suspend fun openPromoOffer(
-        action: ApiNotificationOfferButton,
-        notificationId: String,
-        reference: String?,
-        context: Context
-    ) {
-        when {
-            ApiNotificationActions.isOpenUrl(action.action) -> {
-                val url = promoOfferButtonActions.getButtonUrl(action)
-                if (url != null) { // It's not null on correctly defined notifications.
-                    upgradeTelemetry.onUpgradeFlowStarted(
-                        UpgradeSource.PROMO_OFFER,
-                        UpgradeTrigger.PROMO_OFFER_BANNER,
-                        reference = reference,
-                    )
-                    upgradeTelemetry.onUpgradeAttempt(UpgradeFlowType.EXTERNAL, null, null)
-                    context.openUrl(url)
-                }
-            }
-            ApiNotificationActions.isInAppPurchasePopup(action.action) -> {
-                if (action.panel != null) {
-                    // Telemetry events are reported by the activity.
-                    PromoOfferIapActivity.launch(context, notificationId)
-                }
-            }
-        }
-    }
-
-    fun dismissPromoOffer(notificationId: String) {
-        promoOffersPrefs.addVisitedOffer(notificationId)
     }
 
     fun onWidgetAdoptionShown() {

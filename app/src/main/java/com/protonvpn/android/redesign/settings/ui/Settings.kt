@@ -50,7 +50,6 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -82,27 +81,18 @@ import com.protonvpn.android.ui.settings.OssLicensesActivity
 import com.protonvpn.android.ui.settings.SettingsTelemetryActivity
 import com.protonvpn.android.update.VpnUpdateBanner
 import com.protonvpn.android.utils.openUrl
-import me.proton.core.accountmanager.presentation.compose.AccountSettingsInfo
-import me.proton.core.accountmanager.presentation.compose.viewmodel.AccountSettingsViewModel
-import me.proton.core.accountmanager.presentation.compose.viewmodel.AccountSettingsViewState
 import me.proton.core.compose.theme.ProtonTheme
 import me.proton.core.compose.theme.captionNorm
 import me.proton.core.compose.theme.captionWeak
 import me.proton.core.compose.theme.defaultNorm
 import me.proton.core.compose.theme.defaultSmallWeak
 import me.proton.core.compose.theme.defaultWeak
-import me.proton.core.devicemigration.presentation.settings.SignInToAnotherDeviceItem
-import me.proton.core.domain.entity.UserId
 import me.proton.core.presentation.utils.openMarketLink
-import me.proton.core.telemetry.presentation.ProductMetricsDelegateOwner
-import me.proton.core.telemetry.presentation.compose.LocalProductMetricsDelegateOwner
 import me.proton.core.presentation.R as CoreR
 
 @SuppressLint("InlinedApi")
 @Composable
 fun SettingsRoute(
-    onSignUpClick: () -> Unit,
-    onSignInClick: () -> Unit,
     onSignOutClick: () -> Unit,
     onNavigateToSubSetting: (SubSettingsScreen.Type) -> Unit,
     onNavigateToEditProfile: (Long, ProfileCreationStepTarget) -> Unit
@@ -112,15 +102,11 @@ fun SettingsRoute(
     val upgradeDialogLauncher = hiltViewModel<UpgradeDialogLauncherVM>()
     val viewState = viewModel.viewState.collectAsStateWithLifecycle(initialValue = null).value
 
-    val accountSettingsViewModel = hiltViewModel<AccountSettingsViewModel>()
-    val accountSettingsViewState = accountSettingsViewModel.state.collectAsStateWithLifecycle().value
-
-    if (viewState == null || accountSettingsViewState == AccountSettingsViewState.Hidden) {
+    if (viewState == null) {
         // Return a composable even when viewState == null to avoid transition glitches
         Box(modifier = Modifier.fillMaxSize()) {}
         return
     }
-
     viewModel.event.collectAsEffect { event ->
         when (event) {
             SettingsViewModel.UiEvent.NavigateToConnectionPreferences -> {
@@ -135,112 +121,101 @@ fun SettingsRoute(
 
     val context = LocalContext.current
 
-    CompositionLocalProvider(
-        LocalProductMetricsDelegateOwner provides ProductMetricsDelegateOwner(accountSettingsViewModel)
-    ) {
-        val contactSupportLink = stringResource(R.string.contact_support_link)
-        SettingOverrideDialogHandler(onNavigateToEditProfile) { onOverrideSettingClick ->
-            SettingsView(
-                viewState = viewState,
-                accountSettingsViewState = accountSettingsViewState,
-                onSignUpClick = onSignUpClick,
-                onSignInClick = onSignInClick,
-                onSignOutClick = onSignOutClick,
-                onAppUpdateClick = {
-                    viewModel.onAppUpdateClick(activity)
-                },
-                onAccountClick = {
-                    if (viewState.accountScreenEnabled)
-                        onNavigateToSubSetting(SubSettingsScreen.Type.Account)
-                },
-                onNetShieldClick = {
-                    val overrideType = if (viewState.customDns?.isPrivateDnsActive == true)
-                        OverrideType.NetShieldPrivateDnsConflict else OverrideType.NetShield
-                    onOverrideSettingClick(overrideType) {
-                        onNavigateToSubSetting(SubSettingsScreen.Type.NetShield)
-                    }
-                },
-                onNetShieldUpgradeClick = {
-                    upgradeDialogLauncher.launch(
-                        context,
-                        UpgradeSource.NETSHIELD,
-                        UpgradeTrigger.SETTINGS,
-                    )
-                },
-                onSplitTunnelClick = {
-                    onNavigateToSubSetting(SubSettingsScreen.Type.SplitTunneling)
-                },
-                onSplitTunnelUpgrade = {
-                    upgradeDialogLauncher.launch(
-                        context,
-                        UpgradeSource.SPLIT_TUNNELING,
-                        UpgradeTrigger.SETTINGS,
-                    )
-                },
-                onAlwaysOnClick = {
-                    onNavigateToSubSetting(SubSettingsScreen.Type.KillSwitch)
-                },
-                onProtocolClick = {
-                    onOverrideSettingClick(OverrideType.Protocol) {
-                        onNavigateToSubSetting(SubSettingsScreen.Type.Protocol)
-                    }
-                },
-                onConnectionPreferencesClick = {
-                    viewModel.onOpenConnectionPreferences()
-                },
-                onVpnAcceleratorClick = {
-                    onNavigateToSubSetting(SubSettingsScreen.Type.VpnAccelerator)
-                },
-                onVpnAcceleratorUpgrade = {
-                    upgradeDialogLauncher.launch(
-                        context,
-                        UpgradeSource.VPN_ACCELERATOR,
-                        UpgradeTrigger.SETTINGS,
-                    )
-                },
-                onAdvancedSettingsClick = {
-                    onNavigateToSubSetting(SubSettingsScreen.Type.Advanced)
-                },
-                onNotificationsClick = {
-                    val intent = Intent(ACTION_APP_NOTIFICATION_SETTINGS).apply {
-                        putExtra(EXTRA_APP_PACKAGE, context.packageName)
-                        putExtra(EXTRA_CHANNEL_ID, context.applicationInfo.uid)
-                    }
-
-                    context.startActivity(intent)
-                },
-                onOnHelpCenterClick = {
-                    context.openUrl(contactSupportLink)
-                },
-                onReportBugClick = {
-                    context.startActivity(Intent(context, BugReportActivity::class.java))
-                },
-                onDebugLogsClick = {
-                    context.startActivity(Intent(context, LogActivity::class.java))
-                },
-                onHelpFightClick = {
-                    context.startActivity(Intent(context, SettingsTelemetryActivity::class.java))
-                },
-                onThemeClick = {
-                    onNavigateToSubSetting(SubSettingsScreen.Type.Theme)
-                },
-                onIconChangeClick = {
-                    onNavigateToSubSetting(SubSettingsScreen.Type.IconChange)
-                },
-                onRateUsClick = {
-                    context.openMarketLink()
-                },
-                onThirdPartyLicensesClick = {
-                    context.startActivity(Intent(context, OssLicensesActivity::class.java))
-                },
-                onWidgetClick = {
-                    viewModel.onWidgetSettingClick()
-                },
-                onDebugToolsClick = {
-                    onNavigateToSubSetting(SubSettingsScreen.Type.DebugTools)
+    val contactSupportLink = stringResource(R.string.contact_support_link)
+    SettingOverrideDialogHandler(onNavigateToEditProfile) { onOverrideSettingClick ->
+        SettingsView(
+            viewState = viewState,
+            onSignOutClick = onSignOutClick,
+            onAppUpdateClick = {
+                viewModel.onAppUpdateClick(activity)
+            },
+            onNetShieldClick = {
+                val overrideType = if (viewState.customDns?.isPrivateDnsActive == true)
+                    OverrideType.NetShieldPrivateDnsConflict else OverrideType.NetShield
+                onOverrideSettingClick(overrideType) {
+                    onNavigateToSubSetting(SubSettingsScreen.Type.NetShield)
                 }
-            )
-        }
+            },
+            onNetShieldUpgradeClick = {
+                upgradeDialogLauncher.launch(
+                    context,
+                    UpgradeSource.NETSHIELD,
+                    UpgradeTrigger.SETTINGS,
+                )
+            },
+            onSplitTunnelClick = {
+                onNavigateToSubSetting(SubSettingsScreen.Type.SplitTunneling)
+            },
+            onSplitTunnelUpgrade = {
+                upgradeDialogLauncher.launch(
+                    context,
+                    UpgradeSource.SPLIT_TUNNELING,
+                    UpgradeTrigger.SETTINGS,
+                )
+            },
+            onAlwaysOnClick = {
+                onNavigateToSubSetting(SubSettingsScreen.Type.KillSwitch)
+            },
+            onProtocolClick = {
+                onOverrideSettingClick(OverrideType.Protocol) {
+                    onNavigateToSubSetting(SubSettingsScreen.Type.Protocol)
+                }
+            },
+            onConnectionPreferencesClick = {
+                viewModel.onOpenConnectionPreferences()
+            },
+            onVpnAcceleratorClick = {
+                onNavigateToSubSetting(SubSettingsScreen.Type.VpnAccelerator)
+            },
+            onVpnAcceleratorUpgrade = {
+                upgradeDialogLauncher.launch(
+                    context,
+                    UpgradeSource.VPN_ACCELERATOR,
+                    UpgradeTrigger.SETTINGS,
+                )
+            },
+            onAdvancedSettingsClick = {
+                onNavigateToSubSetting(SubSettingsScreen.Type.Advanced)
+            },
+            onNotificationsClick = {
+                val intent = Intent(ACTION_APP_NOTIFICATION_SETTINGS).apply {
+                    putExtra(EXTRA_APP_PACKAGE, context.packageName)
+                    putExtra(EXTRA_CHANNEL_ID, context.applicationInfo.uid)
+                }
+
+                context.startActivity(intent)
+            },
+            onOnHelpCenterClick = {
+                context.openUrl(contactSupportLink)
+            },
+            onReportBugClick = {
+                context.startActivity(Intent(context, BugReportActivity::class.java))
+            },
+            onDebugLogsClick = {
+                context.startActivity(Intent(context, LogActivity::class.java))
+            },
+            onHelpFightClick = {
+                context.startActivity(Intent(context, SettingsTelemetryActivity::class.java))
+            },
+            onThemeClick = {
+                onNavigateToSubSetting(SubSettingsScreen.Type.Theme)
+            },
+            onIconChangeClick = {
+                onNavigateToSubSetting(SubSettingsScreen.Type.IconChange)
+            },
+            onRateUsClick = {
+                context.openMarketLink()
+            },
+            onThirdPartyLicensesClick = {
+                context.startActivity(Intent(context, OssLicensesActivity::class.java))
+            },
+            onWidgetClick = {
+                viewModel.onWidgetSettingClick()
+            },
+            onDebugToolsClick = {
+                onNavigateToSubSetting(SubSettingsScreen.Type.DebugTools)
+            }
+        )
     }
 }
 
@@ -248,11 +223,7 @@ fun SettingsRoute(
 fun SettingsView(
     modifier: Modifier = Modifier,
     viewState: SettingsViewModel.SettingsViewState,
-    accountSettingsViewState: AccountSettingsViewState,
     onAppUpdateClick: suspend () -> Unit,
-    onAccountClick: () -> Unit,
-    onSignUpClick: () -> Unit,
-    onSignInClick: () -> Unit,
     onSignOutClick: () -> Unit,
     onNetShieldClick: () -> Unit,
     onNetShieldUpgradeClick: () -> Unit,
@@ -305,47 +276,15 @@ fun SettingsView(
                     profileOverrideInfo = it
                 )
             }
-            if (viewState.showAccountCategory)
-                AccountCategory(
-                    state = accountSettingsViewState,
-                    onAccountClick = onAccountClick,
-                    onSignUpClick = onSignUpClick,
-                    onSignInClick = onSignInClick,
-                    onSignOutClick = onSignOutClick,
-                )
-            FeatureCategory(
-                viewState = viewState,
-                onNetShieldClick = onNetShieldClick,
-                onNetShieldUpgrade = onNetShieldUpgradeClick,
-                onSplitTunnelClick = onSplitTunnelClick,
-                onSplitTunnelUpgrade = onSplitTunnelUpgrade,
-                onAlwaysOnClick = onAlwaysOnClick
-            )
             Category(
                 modifier = horizontalItemPadding,
                 stringResource(id = R.string.settings_connection_category)
             ) {
                 SettingRowWithIcon(
-                    icon = CoreR.drawable.ic_proton_bookmark,
-                    title = stringResource(id = R.string.settings_connection_preferences_title),
-                    hasNewLabel = !viewState.connectionPreferences.isFeatureDiscovered,
-                    onClick = onConnectionPreferencesClick,
-                )
-
-                SettingRowWithIcon(
                     icon = viewState.protocol.iconRes,
                     title = stringResource(id = viewState.protocol.titleRes),
                     onClick = onProtocolClick,
                     settingValue = viewState.protocol.settingValueView
-                )
-                SettingRowWithIcon(
-                    icon = viewState.vpnAccelerator.iconRes,
-                    title = stringResource(id = viewState.vpnAccelerator.titleRes),
-                    onClick = if (viewState.vpnAccelerator.isRestricted)
-                        onVpnAcceleratorUpgrade else onVpnAcceleratorClick,
-                    trailingIcon = R.drawable.vpn_plus_badge.takeIf { viewState.vpnAccelerator.isRestricted },
-                    trailingIconTint = false,
-                    settingValue = viewState.vpnAccelerator.settingValueView
                 )
                 SettingRowWithIcon(
                     icon = CoreR.drawable.ic_proton_sliders,
@@ -513,40 +452,6 @@ private fun ColumnScope.FeatureCategory(
                 onClick = onAlwaysOnClick
             )
         }
-    }
-}
-
-@Composable
-private fun ColumnScope.AccountCategory(
-    modifier: Modifier = Modifier,
-    state: AccountSettingsViewState,
-    onAccountClick: () -> Unit,
-    onSignUpClick: () -> Unit,
-    onSignInClick: () -> Unit,
-    onSignOutClick: () -> Unit,
-) {
-    Category(
-        modifier = modifier.padding(start = 16.dp, end = 16.dp),
-        title = stringResource(id = R.string.settings_category_account)
-    ) {
-        AccountSettingsInfo(
-            onAccountClicked = { onAccountClick() },
-            onSignUpClicked = { onSignUpClick() },
-            onSignInClicked = { onSignInClick() },
-            onSignOutClicked = { onSignOutClick() },
-            signOutButtonGone = true,
-            initialCount = 1,
-            state = state
-        )
-        SignInToAnotherDeviceItem(
-            content = { label, onLogOut ->
-                SettingRowWithIcon(
-                    icon = CoreR.drawable.ic_proton_qr_code,
-                    title = label,
-                    onClick = onLogOut
-                )
-            }
-        )
     }
 }
 
@@ -795,43 +700,6 @@ fun CategoryPreview() {
                     title = stringResource(id = R.string.settings_kill_switch_title)
                 )
             }
-        }
-    }
-}
-
-@ProtonVpnPreview
-@Composable
-fun AccountCategoryLoggedInPreview() {
-    ProtonVpnPreview {
-        Column {
-            AccountCategory(
-                state = AccountSettingsViewState.LoggedIn(
-                    userId = UserId("userId"),
-                    initials = "U",
-                    displayName = "User",
-                    email = "user@domain.com"
-                ),
-                onAccountClick = { },
-                onSignUpClick = { },
-                onSignInClick = { },
-                onSignOutClick = { },
-            )
-        }
-    }
-}
-
-@ProtonVpnPreview
-@Composable
-fun AccountCategoryCredentialLessPreview() {
-    ProtonVpnPreview {
-        Column {
-            AccountCategory(
-                state = AccountSettingsViewState.CredentialLess(UserId("userId")),
-                onAccountClick = { },
-                onSignUpClick = { },
-                onSignInClick = { },
-                onSignOutClick = { },
-            )
         }
     }
 }

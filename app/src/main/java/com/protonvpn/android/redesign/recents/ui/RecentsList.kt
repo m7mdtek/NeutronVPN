@@ -52,7 +52,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.layout.boundsInParent
 import androidx.compose.ui.layout.onGloballyPositioned
-import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
@@ -77,7 +76,7 @@ data class ItemIds(
 )
 
 private enum class PeekThresholdItem {
-    ConnectionCard, Header, PromoBanner
+    ConnectionCard, Header
 }
 
 @Composable
@@ -96,8 +95,6 @@ fun RecentsList(
     errorSnackBar: androidx.compose.material.SnackbarHostState?,
     modifier: Modifier = Modifier,
     changeServerButton: (@Composable ColumnScope.() -> Unit)? = null,
-    promoBanner: (@Composable (Modifier) -> Unit)? = null,
-    promoBannerPeekOffset: Dp = 0.dp,
     upsellContent: (@Composable (Modifier, Dp) -> Unit)? = null,
     topPadding: Dp = 0.dp,
     horizontalPadding: Dp = 0.dp,
@@ -123,7 +120,6 @@ fun RecentsList(
         expandState?.setPeekHeight(it.boundsInParent().bottom.roundToInt())
     }
     val peekThresholdItem = when {
-        promoBanner != null -> PeekThresholdItem.PromoBanner
         viewState.recents.isNotEmpty() || upsellContent != null -> PeekThresholdItem.Header
         else -> PeekThresholdItem.ConnectionCard
     }
@@ -166,24 +162,8 @@ fun RecentsList(
                 }
             }
         }
-        if (promoBanner != null) {
-            item {
-                val peekHeightPx = with(LocalDensity.current) { promoBannerPeekOffset.toPx() }
-                val bannerPeekObserver = Modifier.onGloballyPositioned {
-                    expandState?.setPeekHeight((it.boundsInParent().top + peekHeightPx).roundToInt())
-                }
-                promoBanner(
-                    Modifier
-                        .padding(horizontal = horizontalPadding)
-                        .fillMaxWidth()
-                        .animateItem()
-                        .optional({ peekThresholdItem == PeekThresholdItem.PromoBanner }, bannerPeekObserver)
-                )
-            }
-        }
         if (viewState.recents.isNotEmpty() || upsellContent != null) {
             // Note: so far it's always either upsell content or recents.
-            // This part will change with the addition of promo banners.
             item {
                 val headlineText =
                     if (viewState.recents.isNotEmpty()) R.string.recents_headline

@@ -71,7 +71,6 @@ import com.protonvpn.android.ui.deeplinks.DeepLinkHandler
 import com.protonvpn.android.ui.drawer.LogActivity
 import com.protonvpn.android.ui.main.MainActivityHelper
 import com.protonvpn.android.ui.main.MobileMainAccountViewModel
-import com.protonvpn.android.ui.onboarding.OnboardingActivity
 import com.protonvpn.android.ui.onboarding.WhatsNewActivity
 import com.protonvpn.android.ui.onboarding.WhatsNewDialogController
 import com.protonvpn.android.ui.planupgrade.ShowUpgradeSuccess
@@ -164,11 +163,8 @@ class MainActivity : VpnUiDelegateProvider, AppCompatActivity() {
                 activityViewModel.onOnboardingShown()
                 when (it) {
                     is OnboardingEvent.None -> Unit
-                    is OnboardingEvent.ShowOnboarding ->
-                        startActivity(Intent(this, OnboardingActivity::class.java))
-
-                    is OnboardingEvent.ShowUpgradeOnboarding ->
-                        upgradeDialogLauncher.launchOnboarding(this)
+                    is OnboardingEvent.ShowOnboarding,
+                    is OnboardingEvent.ShowUpgradeOnboarding -> Unit
 
                     is OnboardingEvent.ShowUpgradeSuccess ->
                         showUpgradeSuccess.showPlanUpgradeSuccess(

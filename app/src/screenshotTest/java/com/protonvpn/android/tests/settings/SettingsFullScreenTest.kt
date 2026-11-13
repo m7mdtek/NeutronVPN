@@ -46,8 +46,6 @@ import com.protonvpn.android.update.AppUpdateBannerState
 import com.protonvpn.android.update.AppUpdateInfo
 import com.protonvpn.android.vpn.DnsOverride
 import com.protonvpn.android.vpn.ProtocolSelection
-import me.proton.core.accountmanager.presentation.compose.viewmodel.AccountSettingsViewState
-import me.proton.core.domain.entity.UserId
 
 @PreviewTest
 @ProtonVpnTestPreviewLong
@@ -57,17 +55,13 @@ fun SettingsCredentialless() {
 
     ProtonVpnPreview(addSurface = false) {
         SettingsView(
-            accountSettingsViewState = settings.credentiallessAccountViewState,
             viewState = settings.settingsViewState,
             onVpnAcceleratorClick = {},
             onAppUpdateClick = {},
-            onAccountClick = {},
             onProtocolClick = {},
             onVpnAcceleratorUpgrade = {},
             onNotificationsClick = {},
             onRateUsClick = {},
-            onSignInClick = {},
-            onSignUpClick = {},
             onSignOutClick = {},
             onOnHelpCenterClick = {},
             onDebugLogsClick = {},
@@ -96,17 +90,13 @@ fun SettingsPaidProfileConnected() {
     val settingsPaid = SettingsData(false, true)
     ProtonVpnPreview(addSurface = false) {
         SettingsView(
-            accountSettingsViewState = settingsPaid.credentiallessAccountViewState,
             viewState = settingsPaid.settingsViewState,
             onVpnAcceleratorClick = {},
-            onAccountClick = {},
             onAppUpdateClick = {},
             onProtocolClick = {},
             onVpnAcceleratorUpgrade = {},
             onNotificationsClick = {},
             onRateUsClick = {},
-            onSignInClick = {},
-            onSignUpClick = {},
             onSignOutClick = {},
             onOnHelpCenterClick = {},
             onDebugLogsClick = {},
@@ -365,7 +355,6 @@ private class SettingsData(isFree: Boolean, connectedToProfile: Boolean = false,
         splitTunneling = splitTunneling,
         vpnAccelerator = vpnAccelerator,
         showSignOut = false,
-        accountScreenEnabled = false,
         protocol = protocol,
         altRouting = altRouting,
         buildInfo = null,
@@ -376,13 +365,7 @@ private class SettingsData(isFree: Boolean, connectedToProfile: Boolean = false,
         customDns = customDns,
         showDebugTools = false,
         theme = theme,
-        showAccountCategory = true,
         connectionPreferences = connectionPreferences,
     )
 
-    val credentiallessAccountViewState =
-        if (isFree)
-            AccountSettingsViewState.CredentialLess(UserId("test"))
-        else
-            AccountSettingsViewState.Hidden
 }

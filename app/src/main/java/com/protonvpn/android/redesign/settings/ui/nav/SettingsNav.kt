@@ -35,8 +35,6 @@ object SettingsScreen : ScreenNoArg<MainNav>("settings") {
         onNavigateToEditProfile: (Long, ProfileCreationStepTarget) -> Unit,
     ) = addToGraph(this) {
         SettingsRoute(
-            onSignUpClick = coreNavigation.onSignUp,
-            onSignInClick = coreNavigation.onSignIn,
             onSignOutClick = coreNavigation.onSignOut,
             onNavigateToSubSetting = onNavigateToSubSetting,
             onNavigateToEditProfile = onNavigateToEditProfile
