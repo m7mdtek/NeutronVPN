@@ -110,8 +110,6 @@ import com.protonvpn.android.update.AppUpdateBannerStateFlow
 import com.protonvpn.android.update.AppUpdateBannerStateFlowImpl
 import com.protonvpn.android.update.AppUpdateManager
 import com.protonvpn.android.update.AppUpdateManagerImpl
-import com.protonvpn.android.update.ShouldShowAppUpdateDotFlow
-import com.protonvpn.android.update.ShouldShowAppUpdateDotFlowImpl
 import com.protonvpn.android.userstorage.DefaultLocalDataStoreFactory
 import com.protonvpn.android.userstorage.LocalDataStoreFactory
 import com.protonvpn.android.utils.AndroidSharedPreferencesProvider
@@ -493,9 +491,6 @@ object AppModule {
 
         @Binds
         fun bindServerNameTopStrategyEnabled(impl: ServerNameTopStrategyEnabledImpl): ServerNameTopStrategyEnabled
-
-        @Binds
-        fun bindShouldShowAppUpdateDotFlow(impl: ShouldShowAppUpdateDotFlowImpl): ShouldShowAppUpdateDotFlow
 
         @Binds
         fun bindVpnBackgroundUiDelegate(impl: VpnBackgroundUiDelegateImpl): VpnBackgroundUiDelegate

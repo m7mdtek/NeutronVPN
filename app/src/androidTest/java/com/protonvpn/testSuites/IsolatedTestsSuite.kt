@@ -24,9 +24,9 @@ import com.protonvpn.tests.base.ui.ui.ConnectionDetailsTestsCompose
 import com.protonvpn.tests.base.ui.ui.GetConnectIntentViewStateTestsCompose
 import com.protonvpn.tests.base.ui.ui.ProtonTextFieldTestsCompose
 import com.protonvpn.tests.base.ui.ui.VpnStatusViewTests
+import com.protonvpn.tests.bars.BottomBarViewTestsCompose
 import com.protonvpn.tests.db.MigrationTestsIntegration
 import com.protonvpn.tests.netshield.NetShieldTestsCompose
-import com.protonvpn.tests.profiles.ProfilesTestsMocked
 import com.protonvpn.tests.promooffer.PromoOfferCountDownTestsCompose
 import com.protonvpn.tests.recents.RecentsListTestsCompose
 import com.protonvpn.tests.recents.RecentsListValidatorTestsIntegration
@@ -40,12 +40,12 @@ import org.junit.runners.Suite
 @RunWith(Suite::class)
 @Suite.SuiteClasses(
     ConnectionDetailsTestsCompose::class,
+    BottomBarViewTestsCompose::class,
     EffectiveCurrentUserSettingsCachedTests::class,
     GetConnectIntentViewStateTestsCompose::class,
     MigrationTestsIntegration::class,
     NavigationTests::class,
     NetShieldTestsCompose::class,
-    ProfilesTestsMocked::class,
     PromoOfferCountDownTestsCompose::class,
     ProtonTextFieldTestsCompose::class,
     RecentsListTestsCompose::class,

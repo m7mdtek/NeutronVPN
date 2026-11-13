@@ -49,7 +49,6 @@ import me.proton.core.presentation.R as CoreR
 @Composable
 fun BottomBarView(
     modifier: Modifier = Modifier,
-    showCountries: Boolean,
     showGateways: Boolean,
     selectedTarget: MainTarget? = MainTarget.Home,
     notificationDots: Set<MainTarget> = emptySet(),
@@ -64,10 +63,6 @@ fun BottomBarView(
         tonalElevation = 0.dp,
     ) {
         MainTarget.entries.forEach { target ->
-            if(target == MainTarget.Countries && !showCountries) {
-                return@forEach
-            }
-
             if (target == MainTarget.Gateways && !showGateways)
                 return@forEach
 
@@ -117,8 +112,6 @@ fun BottomBarView(
 private fun MainTarget.labelRes(): Int = when (this) {
     MainTarget.Home -> R.string.bottom_nav_home
     MainTarget.Gateways -> R.string.bottom_nav_gateways
-    MainTarget.Profiles -> R.string.bottom_nav_profiles
-    MainTarget.Countries -> R.string.bottom_nav_countries
     MainTarget.Settings -> R.string.botton_nav_settings
 }
 
@@ -126,13 +119,8 @@ private fun MainTarget.labelRes(): Int = when (this) {
 private fun MainTarget.getIcon(selected: Boolean): Int = when (this) {
     MainTarget.Home ->
         if (selected) CoreR.drawable.ic_proton_house_filled else CoreR.drawable.ic_proton_house
-    MainTarget.Profiles ->
-        //TODO: use core asset for _filled when available
-        if (selected) R.drawable.ic_proton_window_terminal_filled else CoreR.drawable.ic_proton_window_terminal
     MainTarget.Gateways ->
         if (selected) CoreR.drawable.ic_proton_servers_filled else CoreR.drawable.ic_proton_servers
-    MainTarget.Countries ->
-        if (selected) CoreR.drawable.ic_proton_earth_filled else CoreR.drawable.ic_proton_earth
     MainTarget.Settings ->
         if (selected) CoreR.drawable.ic_proton_cog_wheel_filled else CoreR.drawable.ic_proton_cog_wheel
 }
@@ -143,9 +131,8 @@ fun BottomBarPreviewDark() {
     ProtonVpnPreview {
         BottomBarView(
             selectedTarget = MainTarget.Home,
-            showCountries = true,
             showGateways = true,
-            notificationDots = EnumSet.of(MainTarget.Profiles, MainTarget.Settings),
+            notificationDots = EnumSet.of(MainTarget.Settings),
             navigateTo = {}
         )
     }

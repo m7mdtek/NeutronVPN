@@ -30,8 +30,6 @@ object HomeRobot : Robot {
 
     private val settingsButton get() =
         node.hasAncestor(node.withTag("mainBottomBar")).withText(R.string.botton_nav_settings)
-    private val profilesButton get() =
-        node.hasAncestor(node.withTag("mainBottomBar")).withText(R.string.bottom_nav_profiles)
     private val homeButton get() = node.hasAncestor(node.withTag("mainBottomBar")).withText(R.string.bottom_nav_home)
     private val signOutButton get() = node.withText(R.string.settings_sign_out)
     private val cancelButton get() = node.withText(R.string.dialog_action_cancel)
@@ -48,7 +46,6 @@ object HomeRobot : Robot {
     fun navigateToHome(): HomeRobot = homeButton.clickTo(this)
 
     fun navigateToSettings(): SettingsRobot = settingsButton.clickTo(SettingsRobot)
-    fun navigateToProfiles(): ProfilesRobot = profilesButton.clickTo(ProfilesRobot)
 
     fun confirmLogout(): AddAccountRobot {
         confirmButton.click()

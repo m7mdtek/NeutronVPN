@@ -41,11 +41,9 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.testTagsAsResourceId
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import androidx.core.view.WindowCompat
-import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.flowWithLifecycle
 import androidx.lifecycle.lifecycleScope
-import androidx.lifecycle.repeatOnLifecycle
 import com.protonvpn.android.BuildConfig
 import com.protonvpn.android.R
 import com.protonvpn.android.auth.ui.AccountViewModel
@@ -59,7 +57,6 @@ import com.protonvpn.android.logging.ProtonLogger
 import com.protonvpn.android.logging.UiConnect
 import com.protonvpn.android.managed.ui.AutoLoginErrorView
 import com.protonvpn.android.managed.ui.AutoLoginView
-import com.protonvpn.android.redesign.app.ui.MainActivityViewModel.Companion.AppUpdateCheckDelay
 import com.protonvpn.android.redesign.app.ui.nav.MainNavEvent
 import com.protonvpn.android.redesign.app.ui.nav.RootNav
 import com.protonvpn.android.redesign.base.ui.ProtonAlert
@@ -77,12 +74,10 @@ import com.protonvpn.android.ui.planupgrade.ShowUpgradeSuccess
 import com.protonvpn.android.ui.planupgrade.UpgradeDialogLauncherVM
 import com.protonvpn.android.ui.vpn.VpnUiActivityDelegate
 import com.protonvpn.android.ui.vpn.VpnUiActivityDelegateMobile
-import com.protonvpn.android.update.UpdatePromptForStaleVersion
 import com.protonvpn.android.vpn.ConnectTrigger
 import com.protonvpn.android.vpn.ui.LocalVpnUiDelegate
 import com.protonvpn.android.widget.WidgetActionHandler
 import dagger.hilt.android.AndroidEntryPoint
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.launch
@@ -103,9 +98,6 @@ class MainActivity : VpnUiDelegateProvider, AppCompatActivity() {
 
     @Inject
     lateinit var showUpgradeSuccess: ShowUpgradeSuccess
-
-    @Inject
-    lateinit var promptUpdate: UpdatePromptForStaleVersion
 
     @Inject
     lateinit var whatsNewDialogController: WhatsNewDialogController
@@ -284,17 +276,6 @@ class MainActivity : VpnUiDelegateProvider, AppCompatActivity() {
                 }
             }
             .launchIn(lifecycleScope)
-        lifecycleScope.launch {
-            repeatOnLifecycle(Lifecycle.State.RESUMED) {
-                // Checking for updates adds IPC and thus is expensive on start.
-                // Delay it a little bit.
-                delay(AppUpdateCheckDelay)
-                val appUpdate = promptUpdate.getUpdatePrompt()
-                if (appUpdate != null) {
-                    promptUpdate.launchUpdateFlow(this@MainActivity)
-                }
-            }
-        }
         processIntent(intent)
     }
 

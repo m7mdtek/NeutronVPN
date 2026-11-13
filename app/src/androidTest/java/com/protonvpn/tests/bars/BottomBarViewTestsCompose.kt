@@ -10,12 +10,9 @@ import org.junit.Test
 class BottomBarViewTestsCompose : FusionComposeTest() {
 
     @Test
-    fun whenShowCountriesIsFalse_thenCountriesNavigationBarItemIsHidden() {
-        val showCountries = false
-
+    fun profileAndCountryNavigationItemsAreHidden() {
         composeRule.setVpnContent {
             BottomBarView(
-                showCountries = showCountries,
                 showGateways = true,
                 selectedTarget = null,
                 notificationDots = emptySet(),
@@ -23,24 +20,8 @@ class BottomBarViewTestsCompose : FusionComposeTest() {
             )
         }
 
+        node.withText(R.string.bottom_nav_profiles).assertDoesNotExist()
         node.withText(R.string.bottom_nav_countries).assertDoesNotExist()
-    }
-
-    @Test
-    fun whenShowCountriesIsTrue_thenCountriesNavigationBarItemIsShown() {
-        val showCountries = true
-
-        composeRule.setVpnContent {
-            BottomBarView(
-                showCountries = showCountries,
-                showGateways = true,
-                selectedTarget = null,
-                notificationDots = emptySet(),
-                navigateTo = {},
-            )
-        }
-
-        node.withText(R.string.bottom_nav_countries).assertIsDisplayed()
     }
 
     @Test
@@ -49,7 +30,6 @@ class BottomBarViewTestsCompose : FusionComposeTest() {
 
         composeRule.setVpnContent {
             BottomBarView(
-                showCountries = true,
                 showGateways = showGateways,
                 selectedTarget = null,
                 notificationDots = emptySet(),
@@ -66,7 +46,6 @@ class BottomBarViewTestsCompose : FusionComposeTest() {
 
         composeRule.setVpnContent {
             BottomBarView(
-                showCountries = true,
                 showGateways = showGateways,
                 selectedTarget = null,
                 notificationDots = emptySet(),

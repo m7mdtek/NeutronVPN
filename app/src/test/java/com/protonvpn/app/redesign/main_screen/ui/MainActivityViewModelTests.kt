@@ -1,7 +1,6 @@
 package com.protonvpn.app.redesign.main_screen.ui
 
 import app.cash.turbine.test
-import com.protonvpn.android.auth.usecase.CurrentUser
 import com.protonvpn.android.auth.usecase.EventShowOnboarding
 import com.protonvpn.android.auth.usecase.OnboardingEvent
 import com.protonvpn.android.managed.AutoLoginManager
@@ -9,18 +8,12 @@ import com.protonvpn.android.redesign.app.ui.MainActivityViewModel
 import com.protonvpn.android.redesign.vpn.ui.VpnStatusViewStateFlow
 import com.protonvpn.android.servers.Server
 import com.protonvpn.android.servers.ServerManager2
-import com.protonvpn.android.ui.storage.UiStateStorage
-import com.protonvpn.android.ui.storage.UiStateStoreProvider
 import com.protonvpn.android.utils.ServerManager
 import com.protonvpn.android.utils.Storage
 import com.protonvpn.android.vpn.VpnConnectionManager
-import com.protonvpn.mocks.FakeShouldShowAppUpdateDotFlow
 import com.protonvpn.mocks.createInMemoryServerManager
-import com.protonvpn.test.shared.InMemoryDataStoreFactory
 import com.protonvpn.test.shared.MockSharedPreference
-import com.protonvpn.test.shared.TestCurrentUserProvider
 import com.protonvpn.test.shared.TestDispatcherProvider
-import com.protonvpn.test.shared.TestUser
 import com.protonvpn.test.shared.createGetSmartProtocols
 import com.protonvpn.test.shared.createServer
 import io.mockk.MockKAnnotations
@@ -58,8 +51,6 @@ class MainActivityViewModelTests {
 
     private lateinit var testScope: TestScope
 
-    private lateinit var uiStateStorage: UiStateStorage
-
     private lateinit var viewModel: MainActivityViewModel
 
     @Before
@@ -72,8 +63,6 @@ class MainActivityViewModelTests {
 
         // Required setting main dispatcher due to usage of: ServerManager
         Dispatchers.setMain(testDispatcher)
-
-        val currentUser = CurrentUser(TestCurrentUserProvider(TestUser.plusUser.vpnUser))
 
         testScope = TestScope(testDispatcher)
 
@@ -88,19 +77,12 @@ class MainActivityViewModelTests {
             getSmartProtocols = createGetSmartProtocols()
         )
 
-        uiStateStorage = UiStateStorage(
-            provider = UiStateStoreProvider(factory = InMemoryDataStoreFactory()),
-            currentUser = currentUser,
-        )
-
         viewModel = MainActivityViewModel(
             mainScope = testScope.backgroundScope,
             autoLoginManager = mockAutoLoginManager,
             serverManager2 = serverManager2,
-            uiStateStorage = uiStateStorage,
             vpnConnectionManager = mockVpnConnectionManager,
             vpnStatusViewStateFlow = mockVpnStatusViewStateFlow,
-            shouldShowAppUpdateDotFlow = FakeShouldShowAppUpdateDotFlow(),
             dontShowAgainStore = mockk(),
             logoutUseCase = mockk(),
             vpnStatus = mockk(),

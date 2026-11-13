@@ -46,16 +46,11 @@ import com.protonvpn.android.base.ui.nav.addToGraph
 import com.protonvpn.android.base.ui.nav.baseRoute
 import com.protonvpn.android.base.ui.nav.rememberVpnNavHostController
 import com.protonvpn.android.profiles.ui.nav.AddEditProfileScreen
-import com.protonvpn.android.profiles.ui.nav.ProfilesScreen
-import com.protonvpn.android.profiles.ui.nav.ProfilesScreen.profiles
 import com.protonvpn.android.redesign.app.ui.CoreNavigation
 import com.protonvpn.android.redesign.app.ui.MainActivityViewModel
 import com.protonvpn.android.redesign.app.ui.nav.RootNav
-import com.protonvpn.android.redesign.countries.ui.nav.CountryListScreen
-import com.protonvpn.android.redesign.countries.ui.nav.CountryListScreen.countryList
 import com.protonvpn.android.redesign.countries.ui.nav.GatewaysScreen
 import com.protonvpn.android.redesign.countries.ui.nav.GatewaysScreen.gateways
-import com.protonvpn.android.redesign.countries.ui.nav.SearchRouteScreen
 import com.protonvpn.android.redesign.home_screen.ui.ShowcaseRecents
 import com.protonvpn.android.redesign.home_screen.ui.nav.ConnectionDetailsScreen
 import com.protonvpn.android.redesign.home_screen.ui.nav.HomeScreen
@@ -65,17 +60,14 @@ import com.protonvpn.android.redesign.main_screen.ui.MainScreenViewModel
 import com.protonvpn.android.redesign.settings.ui.nav.SettingsScreen
 import com.protonvpn.android.redesign.settings.ui.nav.SettingsScreen.settings
 import com.protonvpn.android.redesign.settings.ui.nav.SubSettingsScreen
-import java.util.EnumSet
 
 enum class MainTarget {
-    Home, Countries, Gateways, Profiles, Settings;
+    Home, Gateways, Settings;
 
     companion object {
         fun fromRoute(baseRoute: String?) = when (baseRoute) {
             HomeScreen.route -> Home
-            ProfilesScreen.route -> Profiles
             GatewaysScreen.route -> Gateways
-            CountryListScreen.route -> Countries
             SettingsScreen.route -> Settings
             else -> null
         }
@@ -105,9 +97,7 @@ class MainNav(
         // Don't record whole history of bottom bar navigation
         val screen = when (target) {
             MainTarget.Home -> HomeScreen
-            MainTarget.Profiles -> ProfilesScreen
             MainTarget.Gateways -> GatewaysScreen
-            MainTarget.Countries -> CountryListScreen
             MainTarget.Settings -> SettingsScreen
         }
         navigateToTopLevel(screen)
@@ -144,27 +134,8 @@ class MainNav(
                         },
                     )
 
-                    MainTarget.Profiles ->
-                        profiles(
-                            onNavigateToHomeOnConnect = onNavigateToHomeOnConnect,
-                            onNavigateToAddEdit = { profileId, duplicate ->
-                                rootNav.navigate(
-                                    AddEditProfileScreen,
-                                    AddEditProfileScreen.ProfileCreationArgs(profileId, duplicate)
-                                )
-                            },
-                            onNavigateToSubSetting = { subSettingsType ->
-                                rootNav.navigate(screen = SubSettingsScreen, arg = subSettingsType)
-                            },
-                        )
-
                     MainTarget.Gateways ->
                         gateways(onNavigateToHomeOnConnect = onNavigateToHomeOnConnect)
-
-                    MainTarget.Countries -> countryList(
-                        onNavigateToHomeOnConnect = onNavigateToHomeOnConnect,
-                        onNavigateToSearch = { rootNav.navigate(SearchRouteScreen) }
-                    )
 
                     MainTarget.Settings -> settings(
                         coreNavigation = coreNavigation,
@@ -189,21 +160,12 @@ object MainScreen : ScreenNoArg<RootNav>("main") {
         val bottomTarget = mainNav.currentBottomBarTargetAsState()
         val activity = LocalActivity.current as ComponentActivity
         val activityViewModel: MainActivityViewModel = hiltViewModel(viewModelStoreOwner = activity)
-        val showCountries = activityViewModel.showCountriesFlow.collectAsStateWithLifecycle().value ?: false
         val showGateways = activityViewModel.showGatewaysFlow.collectAsStateWithLifecycle().value ?: false
-        val showProfilesDot by activityViewModel.autoShowInfoSheet.collectAsStateWithLifecycle(false)
-        val showAppVersionUpdateDot by activityViewModel.showAppUpdateDot.collectAsStateWithLifecycle(false)
-        val notificationDots = EnumSet.noneOf(MainTarget::class.java).apply {
-            if (showProfilesDot) add(MainTarget.Profiles)
-            if (showAppVersionUpdateDot) add(MainTarget.Settings)
-        }
         Scaffold(
             bottomBar = {
                 BottomBarView(
                     selectedTarget = bottomTarget,
-                    showCountries = showCountries,
                     showGateways = showGateways,
-                    notificationDots = notificationDots,
                     navigateTo = mainNav::navigate,
                     modifier = Modifier.testTag("mainBottomBar")
                 )

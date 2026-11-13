@@ -84,6 +84,7 @@ class EventShowOnboardingImpl @Inject constructor(
         }
         when {
             paymentState != SessionState.Idle -> OnboardingEvent.None
+            isCredentiallessUser -> OnboardingEvent.None
             paidPlanName != null -> OnboardingEvent.ShowUpgradeSuccess(paidPlanName)
             !credentiallessEnabled -> OnboardingEvent.ShowOnboarding
             isInAppUpgradeAllowedUseCase() -> OnboardingEvent.ShowUpgradeOnboarding
